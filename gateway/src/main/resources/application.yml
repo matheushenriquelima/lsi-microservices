@@ -1,0 +1,102 @@
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: account-1
+          uri: lb://account
+          predicates:
+          - Path=/account/**
+          filters:
+          - RewritePath=/account/(?<path>.*), /$\{path}
+          - AddRequestHeader=X-account-Header, account-header
+          - name: CircuitBreaker
+            args:
+              name: backendA
+              fallbackUri: forward:/fallback/account
+        - id: messagin
+          uri: lb://messagin
+          predicates:
+          - Path=/messagin/**
+          filters:
+          - RewritePath=/messagin/(?<path>.*), /$\{path}
+          - AddRequestHeader=X-messagin-Header, messagin-header
+          - name: CircuitBreaker
+            args:
+              name: backendB
+              fallbackUri: forward:/fallback/messagin
+        - id: reservation
+          uri: lb://reservation
+          predicates:
+          - Path=/reservation/**
+          filters:
+          - RewritePath=/reservation/(?<path>.*), /$\{path}
+          - AddRequestHeader=X-reservation-Header, reservation-header
+          - name: CircuitBreaker
+            args:
+              name: backendA
+              fallbackUri: forward:/fallback/reservation
+        - id: restaurant
+          uri: lb://restaurant
+          predicates:
+          - Path=/restaurant/**
+          filters:
+          - RewritePath=/restaurant/(?<path>.*), /$\{path}
+          - AddRequestHeader=X-restaurant-Header, restaurant-header
+          - name: CircuitBreaker
+            args:
+              name: backendA
+              fallbackUri: forward:/fallback/restaurant
+        - id: search
+          uri: lb://search
+          predicates:
+          - Path=/search/**
+          filters:
+          - RewritePath=/search/(?<path>.*), /$\{path}
+          - AddRequestHeader=X-search-Header, search-header
+          - name: CircuitBreaker
+            args:
+              name: backendA
+              fallbackUri: forward:/fallback/search
+
+server:
+  port: 8088
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - '*'
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      register-health-indicator: true
+      sliding-window-size: 10
+      sliding-window-type: COUNT_BASED
+      minimum-number-of-calls: 5
+      writable-stack-trace-enabled: true
+      permitted-number-of-calls-in-half-open-state: 2
+      automatic-transition-from-open-to-half-open-enabled: true
+      wait-duration-in-open-state: 10s
+      failure-rate-threshold: 50
+  instances:
+    backendA:
+      baseConfig: default
+
+    backendB:
+      register-health-indicator: true
+      sliding-window-size: 10
+      sliding-window-type: COUNT_BASED
+      minimum-number-of-calls: 5
+      writable-stack-trace-enabled: true
+      permitted-number-of-calls-in-half-open-state: 2
+      automatic-transition-from-open-to-half-open-enabled: true
+      wait-duration-in-open-state: 10s
+      failure-rate-threshold: 50
+
